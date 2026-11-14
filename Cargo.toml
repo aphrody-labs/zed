@@ -1165,6 +1165,18 @@ debug = "full"
 lto = false
 codegen-units = 16
 
+# fat-LTO release for LLVM builds (rustc and lld on the same LLVM): `cargo build --profile release-lto`
+[profile.release-lto]
+inherits = "release"
+debug = false
+strip = true
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
+[profile.release-lto.package]
+zed = { codegen-units = 1 }
+
 [workspace.lints.rust]
 unexpected_cfgs = { level = "allow" }
 
