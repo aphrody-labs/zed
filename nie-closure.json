@@ -1,0 +1,243 @@
+{
+  "crates": [
+    {
+      "dir": "crates/bench_metrics",
+      "license": "Apache-2.0",
+      "name": "bench_metrics"
+    },
+    {
+      "dir": "crates/collections",
+      "license": "Apache-2.0",
+      "name": "collections"
+    },
+    {
+      "dir": "crates/refineable/derive_refineable",
+      "license": "Apache-2.0",
+      "name": "derive_refineable"
+    },
+    {
+      "dir": "crates/gpui",
+      "license": "Apache-2.0",
+      "name": "gpui"
+    },
+    {
+      "dir": "crates/gpui_linux",
+      "license": "Apache-2.0",
+      "name": "gpui_linux"
+    },
+    {
+      "dir": "crates/gpui_macros",
+      "license": "Apache-2.0",
+      "name": "gpui_macros"
+    },
+    {
+      "dir": "crates/gpui_platform",
+      "license": "Apache-2.0",
+      "name": "gpui_platform"
+    },
+    {
+      "dir": "crates/gpui_shared_string",
+      "license": "Apache-2.0",
+      "name": "gpui_shared_string"
+    },
+    {
+      "dir": "crates/gpui_tokio",
+      "license": "Apache-2.0",
+      "name": "gpui_tokio"
+    },
+    {
+      "dir": "crates/gpui_util",
+      "license": "Apache-2.0",
+      "name": "gpui_util"
+    },
+    {
+      "dir": "crates/gpui_web",
+      "license": "Apache-2.0",
+      "name": "gpui_web"
+    },
+    {
+      "dir": "crates/gpui_wgpu",
+      "license": "Apache-2.0",
+      "name": "gpui_wgpu"
+    },
+    {
+      "dir": "crates/gpui_windows",
+      "license": "Apache-2.0",
+      "name": "gpui_windows"
+    },
+    {
+      "dir": "crates/http_client",
+      "license": "Apache-2.0",
+      "name": "http_client"
+    },
+    {
+      "dir": "crates/http_client_tls",
+      "license": "Apache-2.0",
+      "name": "http_client_tls"
+    },
+    {
+      "dir": "tooling/perf",
+      "license": "Apache-2.0",
+      "name": "perf"
+    },
+    {
+      "dir": "crates/refineable",
+      "license": "Apache-2.0",
+      "name": "refineable"
+    },
+    {
+      "dir": "crates/reqwest_client",
+      "license": "Apache-2.0",
+      "name": "reqwest_client"
+    },
+    {
+      "dir": "crates/scheduler",
+      "license": "Apache-2.0",
+      "name": "scheduler"
+    },
+    {
+      "dir": "crates/sum_tree",
+      "license": "Apache-2.0",
+      "name": "sum_tree"
+    },
+    {
+      "dir": "crates/util_macros",
+      "license": "Apache-2.0",
+      "name": "util_macros"
+    },
+    {
+      "dir": "crates/zlog",
+      "license": "Apache-2.0",
+      "name": "zlog"
+    },
+    {
+      "dir": "crates/ztracing",
+      "license": "Apache-2.0",
+      "name": "ztracing"
+    },
+    {
+      "dir": "crates/ztracing_macro",
+      "license": "Apache-2.0",
+      "name": "ztracing_macro"
+    }
+  ],
+  "replacedGit": [
+    {
+      "git": "https://github.com/zed-industries/async-process.git",
+      "name": "async-process",
+      "registry": "no [patch]: the crates.io release",
+      "rev": "0b6d6713570af61806e1e5cb40e0f757cb93fd9d"
+    },
+    {
+      "git": "https://github.com/smol-rs/async-task",
+      "name": "async-task",
+      "registry": "no [patch]: the crates.io release",
+      "rev": "41fd3359c75e221bd8b187a8ee361aa309c1714c"
+    },
+    {
+      "git": "https://github.com/zed-industries/calloop",
+      "name": "calloop",
+      "registry": "no [patch]: the crates.io release",
+      "rev": "3759371fee14c40066d64777e2a36b6ffcc22590"
+    },
+    {
+      "git": "https://github.com/zed-industries/khronos-egl",
+      "name": "khronos-egl",
+      "registry": "no [patch]: the crates.io release",
+      "rev": "42214b36347b108fd9630ca6254b96dde59e04fe"
+    },
+    {
+      "git": "https://github.com/gfx-rs/wgpu",
+      "name": "naga",
+      "registry": "=30.0.2",
+      "rev": "cddb2f5d80dc0009b2ef6767635140cacf90a007"
+    },
+    {
+      "git": "https://github.com/zed-industries/oo7",
+      "name": "oo7",
+      "registry": "0.6",
+      "rev": "731c1215edb6905876c6137ab300428c7b8d7c13"
+    },
+    {
+      "git": "https://github.com/zed-industries/wasm_thread",
+      "name": "wasm_thread",
+      "registry": "0.3",
+      "rev": "0cf96c7708dfb97ccf3da50347e25edcf75d6937"
+    },
+    {
+      "git": "https://github.com/gfx-rs/wgpu",
+      "name": "wgpu",
+      "registry": "=30.0.2",
+      "rev": "cddb2f5d80dc0009b2ef6767635140cacf90a007"
+    },
+    {
+      "git": "https://github.com/zed-industries/windows-capture.git",
+      "name": "windows-capture",
+      "registry": "no [patch]: the crates.io release",
+      "rev": "f0d6c1b6691db75461b732f6d5ff56eed002eeb9"
+    },
+    {
+      "git": "https://github.com/zed-industries/font-kit",
+      "name": "zed-font-kit",
+      "registry": "0.14.1-zed",
+      "rev": "94b0f28166665e8fd2f53ff6d268a14955c82269"
+    },
+    {
+      "git": "https://github.com/zed-industries/reqwest.git",
+      "name": "zed-reqwest",
+      "registry": "0.12.15-zed",
+      "rev": "33bc764aa15ff7b200bf7c93bd96e24878d53e14"
+    },
+    {
+      "git": "https://github.com/zed-industries/scap",
+      "name": "zed-scap",
+      "registry": "0.0.8-zed",
+      "rev": "b5c86ec58dd4b6b7732bf6ac8be03d6b1f190a82"
+    },
+    {
+      "git": "https://github.com/zed-industries/xim-rs.git",
+      "name": "zed-xim",
+      "registry": "0.4.0-zed",
+      "rev": "16f35a2c881b815a2b6cdfd6687988e84f8447d8"
+    }
+  ],
+  "roots": [
+    "gpui_platform",
+    "gpui_tokio"
+  ],
+  "sourceEdits": [
+    {
+      "file": "crates/gpui_wgpu/src/wgpu_context.rs",
+      "reason": "DeviceDescriptor::default_queue exists only on wgpu trunk (gfx-rs/wgpu#10109); 30.0.2 has a single default queue"
+    },
+    {
+      "file": "crates/gpui_wgpu/src/wgpu_atlas.rs",
+      "reason": "DeviceDescriptor::default_queue exists only on wgpu trunk (gfx-rs/wgpu#10109); 30.0.2 has a single default queue"
+    },
+    {
+      "file": "crates/gpui_wgpu/src/wgpu_renderer.rs",
+      "reason": "TextureFormat::has_srgb_suffix is trunk-only; is_srgb is the same test on 30.0.2"
+    }
+  ],
+  "targets": [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+    "wasm32-unknown-unknown"
+  ],
+  "toolchain": "1.100.0",
+  "upstream": "upstream/main",
+  "upstreamSha": "b51ffab0153f3372b71d1bd565d48d5203fefe6a",
+  "wgpu": "=30.0.2",
+  "wgpuFixesOnlyAtPinnedRev": [
+    {
+      "mergedAt": "2026-09-12",
+      "pr": "gfx-rs/wgpu#10230",
+      "title": "Fix issue with surface drop panic (Vulkan)"
+    },
+    {
+      "mergedAt": "2026-09-15",
+      "pr": "gfx-rs/wgpu#10348",
+      "title": "Ignore timeouts on wasm (WebGL resize)"
+    }
+  ]
+}
