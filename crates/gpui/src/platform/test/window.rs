@@ -609,6 +609,12 @@ impl PlatformWindow for TestWindow {
         }
     }
 
+    fn a11y_init(&self, callbacks: crate::A11yCallbacks) {
+        // nie: the test window plays a screen reader that is always connected, so headless tests
+        // build the AccessKit tree and `Window::debug_a11y_tree_json` returns it.
+        let _ = (callbacks.activation)();
+    }
+
     fn as_test(&mut self) -> Option<&mut TestWindow> {
         Some(self)
     }

@@ -215,6 +215,10 @@
       "reason": "DeviceDescriptor::default_queue exists only on wgpu trunk (gfx-rs/wgpu#10109); 30.0.2 has a single default queue"
     },
     {
+      "file": "crates/gpui/src/platform/test/window.rs",
+      "reason": "the test window never activates accessibility, so headless tests could not dump the AccessKit tree"
+    },
+    {
       "file": "crates/gpui_wgpu/src/wgpu_renderer.rs",
       "reason": "TextureFormat::has_srgb_suffix is trunk-only; is_srgb is the same test on 30.0.2"
     }
