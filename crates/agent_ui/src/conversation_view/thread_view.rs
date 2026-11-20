@@ -1,5 +1,5 @@
 use crate::{
-    DEFAULT_THREAD_TITLE, SelectPermissionGranularity,
+    CycleResponseSpeed, DEFAULT_THREAD_TITLE, SelectPermissionGranularity,
     conversation_view::thread_search_bar::{ThreadSearchBar, ThreadSearchBarEvent},
     entry_view_state::TERMINAL_CONTENT_TOP_PADDING,
     open_abs_path_at_point, project_path_for_file_link,
@@ -2917,7 +2917,6 @@ impl ThreadView {
                 message_editor.update(cx, |message_editor, cx| {
                     message_editor.clear(window, cx);
                 });
-                cx.notify();
             })?;
             Ok(())
         })
@@ -3298,7 +3297,6 @@ impl ThreadView {
         }
         self.set_editor_is_expanded(!self.editor_expanded, cx);
         cx.stop_propagation();
-        cx.notify();
     }
 
     pub fn set_editor_is_expanded(&mut self, is_expanded: bool, cx: &mut Context<Self>) {
@@ -5422,7 +5420,7 @@ impl ThreadView {
                                 this.tooltip(Tooltip::text(EDIT_NOT_READY_TOOLTIP_LABEL))
                             })
                             .key_binding(
-                                KeyBinding::for_action_in(&RejectAll, &focus_handle.clone(), cx)
+                                KeyBinding::for_action_in(&RejectAll, &focus_handle, cx)
                                     .map(|kb| kb.size(rems_from_px(12_f32))),
                             )
                             .on_click(cx.listener(move |this, _, window, cx| {
@@ -5979,7 +5977,7 @@ impl ThreadView {
                                         this.key_binding(
                                             KeyBinding::for_action_in(
                                                 action.as_ref(),
-                                                &focus_handle.clone(),
+                                                &focus_handle,
                                                 cx,
                                             )
                                             .map(|kb| kb.size(keybinding_size)),
@@ -6193,13 +6191,6 @@ impl ThreadView {
         }
     }
 
-    fn fast_mode_available(&self, cx: &Context<Self>) -> bool {
-        self.as_native_thread(cx)
-            .and_then(|thread| thread.read(cx).model())
-            .map(|model| model.supports_fast_mode())
-            .unwrap_or(false)
-    }
-
     fn refresh_sandbox_status(&mut self, cx: &mut Context<Self>) -> Option<VerifiedSandboxStatus> {
         let thread = self.as_native_thread(cx)?;
         let (key, refresh) =
@@ -6314,16 +6305,24 @@ impl ThreadView {
     }
 
     fn render_fast_mode_control(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
-        if !self.fast_mode_available(cx) {
+        let thread = self.as_native_thread(cx)?.read(cx);
+        let model = thread.model()?;
+        if model.supports_ultrafast_mode {
+            return Some(
+                self.render_response_speed_picker(
+                    model.supports_fast_mode(),
+                    thread
+                        .speed()
+                        .filter(|speed| model.supports_speed(*speed))
+                        .unwrap_or_default(),
+                    cx,
+                ),
+            );
+        }
+        if !model.supports_fast_mode() {
             return None;
         }
-
-        let thread = self.as_native_thread(cx)?.read(cx);
         let is_fast = matches!(thread.speed(), Some(Speed::Fast));
-
-        let model_identity = thread
-            .model()
-            .map(|model| (model.provider_id(), model.id()));
 
         let (tooltip_label, new_speed) = if is_fast {
             ("Disable Fast Mode", Speed::Standard)
@@ -6405,8 +6404,6 @@ impl ThreadView {
             );
         }
 
-        let _ = model_identity;
-
         Some(
             icon_button
                 .tooltip(move |_, cx| {
@@ -6417,6 +6414,93 @@ impl ThreadView {
                 }))
                 .into_any_element(),
         )
+    }
+
+    fn render_response_speed_picker(
+        &self,
+        supports_fast: bool,
+        speed: Speed,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let (icon, label) = match speed {
+            Speed::Standard => (IconName::FastForwardOff, "Response Speed: Standard"),
+            Speed::Fast => (IconName::FastForward, "Response Speed: Fast"),
+            Speed::Ultrafast => (IconName::FastForwardUltrafast, "Response Speed: Ultrafast"),
+        };
+        let button = ButtonLike::new("response-speed")
+            .selected_style(ButtonStyle::Tinted(TintColor::Accent))
+            .aria_label(label)
+            .child(
+                Icon::new(icon)
+                    .size(IconSize::Small)
+                    .color(if speed == Speed::Standard {
+                        Color::Disabled
+                    } else {
+                        Color::Accent
+                    }),
+            );
+        let focus = self.message_editor.focus_handle(cx);
+        let view = cx.entity().downgrade();
+        PopoverMenu::new("response-speed-menu")
+            .trigger_with_tooltip(button, move |_, cx| {
+                let focus = focus.clone();
+                cx.new(|_| ResponseSpeedTooltip {
+                    focus,
+                    speed,
+                    supports_fast,
+                })
+                .into()
+            })
+            .anchor(gpui::Anchor::BottomRight)
+            .offset(gpui::point(px(0.), px(-2.)))
+            .menu(move |window, cx| {
+                Some(ContextMenu::build(window, cx, |mut menu, _, _| {
+                    menu = menu.header("Speed").spacing(ui::ListItemSpacing::Sparse);
+                    for (choice, label, description) in [
+                        (Speed::Standard, "Standard", "Default Speed and Usage"),
+                        (Speed::Fast, "Fast", "Faster Responses  •  Higher Usage"),
+                        (
+                            Speed::Ultrafast,
+                            "Ultrafast",
+                            "Fastest Responses  •  Highest Usage",
+                        ),
+                    ] {
+                        if choice == Speed::Fast && !supports_fast {
+                            continue;
+                        }
+                        let view = view.clone();
+                        menu = menu.custom_entry(
+                            move |_, _| {
+                                h_flex()
+                                    .w_full()
+                                    .justify_between()
+                                    .gap_4()
+                                    .child(
+                                        v_flex().child(Label::new(label)).child(
+                                            Label::new(description)
+                                                .size(LabelSize::Small)
+                                                .color(Color::Muted),
+                                        ),
+                                    )
+                                    .when(choice == speed, |row| {
+                                        row.child(
+                                            Icon::new(IconName::Check)
+                                                .size(IconSize::Small)
+                                                .color(Color::Accent),
+                                        )
+                                    })
+                                    .into_any_element()
+                            },
+                            move |_, cx| {
+                                view.update(cx, |this, cx| this.apply_fast_mode_speed(choice, cx))
+                                    .log_err();
+                            },
+                        );
+                    }
+                    menu
+                }))
+            })
+            .into_any_element()
     }
 
     fn pending_fast_mode_confirmation(
@@ -7028,6 +7112,51 @@ impl ThreadView {
     }
 }
 
+struct ResponseSpeedTooltip {
+    focus: FocusHandle,
+    speed: Speed,
+    supports_fast: bool,
+}
+
+impl Render for ResponseSpeedTooltip {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let enabled = self.speed != Speed::Standard;
+        ui::tooltip_container(cx, move |container, cx| {
+            container
+                .gap_0p5()
+                .when(self.supports_fast, |container| {
+                    container
+                        .child(
+                            h_flex()
+                                .gap_4()
+                                .justify_between()
+                                .child(
+                                    Label::new("Cycle Response Speed")
+                                        .when(!enabled, |label| label.color(Color::Muted)),
+                                )
+                                .child(KeyBinding::for_action_in(
+                                    &CycleResponseSpeed,
+                                    &self.focus,
+                                    cx,
+                                )),
+                        )
+                        .child(div().my_0p5().child(Divider::horizontal()))
+                })
+                .child(
+                    h_flex()
+                        .gap_4()
+                        .justify_between()
+                        .child(Label::new(if enabled {
+                            "Disable Fast Mode"
+                        } else {
+                            "Enable Fast Mode"
+                        }))
+                        .child(KeyBinding::for_action_in(&ToggleFastMode, &self.focus, cx)),
+                )
+        })
+    }
+}
+
 struct TokenUsageTooltip {
     percentage: String,
     used: String,
@@ -7349,7 +7478,9 @@ fn fs_grants_nothing(fs: &SandboxFsDisplay) -> bool {
 fn network_grants_nothing(network: &SandboxNetPolicy) -> bool {
     match network {
         SandboxNetPolicy::Blocked => true,
-        SandboxNetPolicy::Restricted { allowed_domains } => allowed_domains.is_empty(),
+        SandboxNetPolicy::Restricted {
+            allowed_domains, ..
+        } => allowed_domains.is_empty(),
         SandboxNetPolicy::Unrestricted => false,
     }
 }
@@ -7384,10 +7515,14 @@ fn sandbox_network_rows(network: &SandboxNetPolicy) -> Vec<SandboxRow> {
     match network {
         SandboxNetPolicy::Unrestricted => vec![SandboxRow::message("All domains (unrestricted)")],
         SandboxNetPolicy::Blocked => vec![SandboxRow::message("None")],
-        SandboxNetPolicy::Restricted { allowed_domains } if allowed_domains.is_empty() => {
+        SandboxNetPolicy::Restricted {
+            allowed_domains, ..
+        } if allowed_domains.is_empty() => {
             vec![SandboxRow::message("None")]
         }
-        SandboxNetPolicy::Restricted { allowed_domains } => allowed_domains
+        SandboxNetPolicy::Restricted {
+            allowed_domains, ..
+        } => allowed_domains
             .iter()
             .map(|domain| SandboxRow::domain(domain.clone()))
             .collect(),
@@ -8520,7 +8655,9 @@ impl ThreadView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.thread_search_bar.is_none() {
+        let search_bar = if let Some(search_bar) = self.thread_search_bar.clone() {
+            search_bar
+        } else {
             let thread = self.thread.clone();
             let view = cx.entity().downgrade();
             let on_activate =
@@ -8559,27 +8696,21 @@ impl ThreadView {
                     }
                 },
             ));
-            self.thread_search_bar = Some(search_bar);
-        }
+            self.thread_search_bar = Some(search_bar.clone());
+            search_bar
+        };
 
         // Re-focus an open bar unless it already owns focus.
-        let search_bar_focused = self
-            .thread_search_bar
-            .as_ref()
-            .is_some_and(|bar| bar.focus_handle(cx).contains_focused(window, cx));
+        let search_bar_focused = search_bar.focus_handle(cx).contains_focused(window, cx);
 
         if self.thread_search_visible && search_bar_focused {
-            if let Some(bar) = &self.thread_search_bar {
-                bar.update(cx, |bar, cx| bar.clear_highlights(cx));
-            }
+            search_bar.update(cx, |bar, cx| bar.clear_highlights(cx));
             self.thread_search_visible = false;
             self.message_editor.focus_handle(cx).focus(window, cx);
             cx.notify();
         } else {
             self.thread_search_visible = true;
-            if let Some(bar) = self.thread_search_bar.clone() {
-                bar.update(cx, |bar, cx| bar.focus_and_refresh(window, cx));
-            }
+            search_bar.update(cx, |bar, cx| bar.focus_and_refresh(window, cx));
             cx.notify();
         }
     }
@@ -13300,7 +13431,6 @@ impl ThreadView {
             .on_click(cx.listener({
                 move |this, _, _, cx| {
                     this.clear_thread_error(cx);
-                    cx.notify();
                 }
             }))
     }
@@ -13877,18 +14007,27 @@ impl ThreadView {
             return;
         }
 
-        if !self.fast_mode_available(cx) {
-            return;
-        }
-
-        let Some(thread) = self.as_native_thread(cx) else {
+        let Some(thread) = self.as_native_thread(cx).map(|thread| thread.read(cx)) else {
             return;
         };
-
-        let current_speed = thread.read(cx).speed().unwrap_or_default();
-        let new_speed = current_speed.toggle();
-
-        if new_speed == Speed::Fast && self.pending_fast_mode_confirmation(cx).is_some() {
+        let Some(model) = thread.model() else { return };
+        let current_speed = thread
+            .speed()
+            .filter(|speed| model.supports_speed(*speed))
+            .unwrap_or_default();
+        let new_speed = if current_speed != Speed::Standard {
+            Speed::Standard
+        } else if model.supports_fast_mode() {
+            Speed::Fast
+        } else if model.supports_ultrafast_mode {
+            Speed::Ultrafast
+        } else {
+            return;
+        };
+        if new_speed == Speed::Fast
+            && !model.supports_ultrafast_mode
+            && self.pending_fast_mode_confirmation(cx).is_some()
+        {
             let menu_handle = self.fast_mode_menu_handle.clone();
             window.defer(cx, move |window, cx| {
                 menu_handle.toggle(window, cx);
@@ -13899,12 +14038,35 @@ impl ThreadView {
         self.apply_fast_mode_speed(new_speed, cx);
     }
 
-    fn apply_fast_mode_speed(&mut self, new_speed: Speed, cx: &mut Context<Self>) {
+    fn cycle_response_speed(&mut self, cx: &mut Context<Self>) {
+        let Some(thread) = self.as_native_thread(cx).map(|thread| thread.read(cx)) else {
+            return;
+        };
+        let Some(model) = thread.model() else { return };
+        if !model.supports_fast_mode() || !model.supports_ultrafast_mode {
+            return;
+        }
+        match thread.speed() {
+            Some(Speed::Fast) => self.apply_fast_mode_speed(Speed::Ultrafast, cx),
+            Some(Speed::Ultrafast) => self.apply_fast_mode_speed(Speed::Fast, cx),
+            _ => {}
+        }
+    }
+
+    fn apply_fast_mode_speed(&mut self, speed: Speed, cx: &mut Context<Self>) {
         let Some(thread) = self.as_native_thread(cx) else {
             return;
         };
+        let current = thread.read(cx);
+        if current.speed() == Some(speed)
+            || !current
+                .model()
+                .is_some_and(|model| model.supports_speed(speed))
+        {
+            return;
+        }
         thread.update(cx, |thread, cx| {
-            thread.set_speed(new_speed, cx);
+            thread.set_speed(speed, cx);
 
             let favorite_key = thread
                 .model()
@@ -13913,11 +14075,11 @@ impl ThreadView {
             update_settings_file(fs, cx, move |settings, _| {
                 if let Some(agent) = settings.agent.as_mut() {
                     if let Some(default_model) = agent.default_model.as_mut() {
-                        default_model.speed = Some(new_speed);
+                        default_model.speed = Some(speed);
                     }
                     if let Some((provider_id, model_id)) = &favorite_key {
                         agent.update_favorite_model(provider_id, model_id, |favorite| {
-                            favorite.speed = Some(new_speed)
+                            favorite.speed = Some(speed)
                         });
                     }
                 }
@@ -14132,6 +14294,9 @@ impl Render for ThreadView {
             .on_action(cx.listener(Self::toggle_search))
             .on_action(cx.listener(|this, _: &ToggleFastMode, window, cx| {
                 this.toggle_fast_mode(window, cx);
+            }))
+            .on_action(cx.listener(|this, _: &CycleResponseSpeed, _, cx| {
+                this.cycle_response_speed(cx);
             }))
             .on_action(cx.listener(|this, _: &ToggleThinkingMode, _window, cx| {
                 if this.thread.read(cx).status() != ThreadStatus::Idle {
